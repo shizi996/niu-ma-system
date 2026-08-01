@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【系统绑定成功】牛马打工人系统 v9.996</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0e17;
+      --panel: rgba(15, 22, 40, 0.92);
+      --border: rgba(0, 255, 200, 0.35);
+      --glow: #00ffc8;
+      --gold: #ffd700;
+      --danger: #ff4757;
+      --purple: #a855f7;
+      --text: #e8f4f8;
+      --muted: #7a8fa0;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 背景特效 */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bg-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-glow-1 { top: -200px; right: -100px; background: var(--glow); }
+    .bg-glow-2 { bottom: -200px; left: -100px; background: var(--purple); }
+
+    /* 启动画面 */
+    #boot-screen {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .boot-logo {
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--glow), var(--gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 32px;
+      animation: pulse 2s infinite;
+    }
+
+    .boot-text {
+      font-family: 'Courier New', monospace;
+      color: var(--glow);
+      font-size: 14px;
+      line-height: 2;
+      text-align: left;
+      width: min(480px, 90vw);
+    }
+
+    .boot-bar-wrap {
+      width: min(480px, 90vw);
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      margin-top: 24px;
+      overflow: hidden;
+    }
+
+    .boot-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--glow), var(--gold));
+      transition: width 0.3s;
+      box-shadow: 0 0 10px var(--glow);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* 主界面 */
+    #main-app {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px 16px 80px;
+      opacity: 0;
+      transition: opacity 0.8s;
+    }
+    #main-app.show { opacity: 1; }
+
+    .sys-header {
+      text-align: center;
+      padding: 24px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .sys-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border: 1px solid var(--gold);
+      color: var(--gold);
+      font-size: 11px;
+      letter-spacing: 2px;
+      border-radius: 2px;
+      margin-bottom: 12px;
+      animation: blink 3s infinite;
+    }
+
+    @keyframes blink {
+      0%, 90%, 100% { opacity: 1; }
+      95% { opacity: 0.3; }
+    }
+
+    .sys-title {
+      font-size: clamp(24px, 5vw, 36px);
+      font-weight: 900;
+      background: linear-gradient(135deg, #fff 0%, var(--glow) 50%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .sys-subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    /* 面板 */
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow), transparent);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      color: var(--glow);
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title::before {
+      content: '▸';
+    }
+
+    /* 绑定信息 */
+    .bind-info {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 2px solid var(--glow);
+      background: linear-gradient(135deg, #1a2744, #0d1520);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 0 20px rgba(0,255,200,0.3);
+    }
+
+    .bind-name {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .bind-rank {
+      color: var(--gold);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .bind-id {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+      font-family: monospace;
+    }
+
+    /* 属性条 */
+    .stat-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 100px 1fr 48px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-label { font-size: 13px; color: var(--muted); }
+
+    .stat-bar-bg {
+      height: 8px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .stat-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s ease;
+      position: relative;
+    }
+
+    .stat-bar::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .stat-val {
+      font-size: 13px;
+      font-weight: 700;
+      text-align: right;
+      font-family: monospace;
+    }
+
+    .bar-green { background: linear-gradient(90deg, #00b894, var(--glow)); }
+    .bar-gold { background: linear-gradient(90deg, #f39c12, var(--gold)); }
+    .bar-red { background: linear-gradient(90deg, #c0392b, var(--danger)); }
+    .bar-purple { background: linear-gradient(90deg, #6c5ce7, var(--purple)); }
+
+    /* 任务卡片 */
+    .task-card {
+      background: rgba(0,255,200,0.05);
+      border: 1px solid rgba(0,255,200,0.2);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .task-card:last-child { margin-bottom: 0; }
+
+    .task-type {
+      font-size: 11px;
+      color: var(--danger);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .task-type.daily { color: var(--glow); }
+    .task-type.hidden { color: var(--purple); }
+
+    .task-desc {
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .task-reward {
+      font-size: 12px;
+      color: var(--gold);
+    }
+
+    /* 按钮 */
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(0,255,200,0.08);
+      color: var(--glow);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn:hover {
+      background: rgba(0,255,200,0.2);
+      box-shadow: 0 0 15px rgba(0,255,200,0.3);
+      transform: translateY(-1px);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    .btn-gold {
+      border-color: rgba(255,215,0,0.5);
+      color: var(--gold);
+      background: rgba(255,215,0,0.08);
+    }
+
+    .btn-gold:hover {
+      background: rgba(255,215,0,0.2);
+      box-shadow: 0 0 15px rgba(255,215,0,0.3);
+    }
+
+    .btn-danger {
+      border-color: rgba(255,71,87,0.5);
+      color: var(--danger);
+      background: rgba(255,71,87,0.08);
+    }
+
+    /* 弹窗通知 */
+    #toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 8888;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 360px;
+    }
+
+    .toast {
+      background: rgba(10, 14, 23, 0.95);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--glow);
+      border-radius: 8px;
+      padding: 14px 16px;
+      animation: slideIn 0.4s ease, fadeOut 0.4s ease 3.6s forwards;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .toast.warning { border-left-color: var(--danger); }
+    .toast.reward { border-left-color: var(--gold); }
+
+    .toast-title {
+      font-size: 11px;
+      color: var(--glow);
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .toast.warning .toast-title { color: var(--danger); }
+    .toast.reward .toast-title { color: var(--gold); }
+
+    .toast-body { font-size: 14px; line-height: 1.5; }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateX(20px); }
+    }
+
+    /* 成就弹窗 */
+    #achievement-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      z-index: 7777;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    #achievement-modal.show { display: flex; }
+
+    .achievement-box {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      max-width: 400px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 60px rgba(255,215,0,0.3);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .achievement-icon { font-size: 64px; margin-bottom: 16px; }
+
+    .achievement-title {
+      font-size: 11px;
+      color: var(--gold);
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+
+    .achievement-name {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .achievement-desc {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* 日志 */
+    .log-list {
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 2;
+      color: var(--muted);
+    }
+
+    .log-list .highlight { color: var(--glow); }
+    .log-list .warn { color: var(--danger); }
+    .log-list .gold { color: var(--gold); }
+
+    /* 输入框 */
+    .name-input-wrap {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .name-input {
+      flex: 1;
+      padding: 10px 14px;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .name-input:focus {
+      border-color: var(--glow);
+      box-shadow: 0 0 10px rgba(0,255,200,0.2);
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .share-link {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 6px 14px;
+      background: rgba(0,255,200,0.1);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--glow);
+      font-size: 11px;
+      font-family: monospace;
+      cursor: pointer;
+      word-break: break-all;
+    }
+
+    .share-link:hover { background: rgba(0,255,200,0.2); }
+
+    @media (max-width: 480px) {
+      .stat-row { grid-template-columns: 80px 1fr 40px; }
+      .btn-group { flex-direction: column; }
+      .btn { width: 100%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <!-- 启动画面 -->
+  <div id="boot-screen">
+    <div class="boot-logo">🐴 牛马打工人系统</div>
+    <div class="boot-text" id="boot-log"></div>
+    <div class="boot-bar-wrap"><div class="boot-bar" id="boot-bar"></div></div>
+  </div>
+
+  <!-- 主界面 -->
+  <div id="main-app">
+    <header class="sys-header">
+      <div class="sys-badge">⚡ SYSTEM ONLINE · 天道绑定中</div>
+      <h1 class="sys-title">牛马打工人系统</h1>
+      <p class="sys-subtitle">检测到优质打工人 · 自动绑定成功 · 拒绝绑定无效（绑定了也跑不掉）</p>
+    </header>
+
+    <!-- 绑定信息 -->
+    <div class="panel">
+      <div class="panel-title">宿主信息面板</div>
+      <div class="bind-info">
+        <div class="avatar" id="avatar">🐮</div>
+        <div>
+          <div class="bind-name" id="host-name">神秘打工人</div>
+          <div class="bind-rank" id="host-rank">Lv.∞ 资深牛马 · 福报收集者</div>
+          <div class="bind-id" id="host-id">UID: NM-20260801-996007</div>
+        </div>
+      </div>
+      <div class="name-input-wrap">
+        <input class="name-input" id="name-input" placeholder="输入你的名字，系统将为你定制专属牛马档案..." maxlength="12">
+        <button class="btn" onclick="bindHost()">重新绑定</button>
+      </div>
+    </div>
+
+    <!-- 属性面板 -->
+    <div class="panel">
+      <div class="panel-title">核心属性 · 实时监测中</div>
+      <div class="stat-list" id="stat-list"></div>
+    </div>
+
+    <!-- 今日任务 -->
+    <div class="panel">
+      <div class="panel-title">今日系统任务 · 不可拒绝</div>
+      <div id="task-list"></div>
+      <div class="btn-group">
+        <button class="btn" onclick="refreshTasks()">🔄 刷新任务（假的，还是那些）</button>
+        <button class="btn btn-gold" onclick="claimReward()">✨ 领取今日福报</button>
+        <button class="btn btn-danger" onclick="tryQuit()">🚪 申请离职</button>
+      </div>
+    </div>
+
+    <!-- 系统日志 -->
+    <div class="panel">
+      <div class="panel-title">系统日志</div>
+      <div class="log-list" id="sys-log"></div>
+    </div>
+
+    <footer class="footer-note">
+      <p>⚠️ 本系统纯属娱乐，如有雷同，说明你们公司也一样</p>
+      <p style="margin-top:8px;">分享给同事，一起绑定牛马身份 👇</p>
+      <div class="share-link" id="share-link" onclick="copyLink()" title="点击复制链接"></div>
+    </footer>
+  </div>
+
+  <!-- 成就弹窗 -->
+  <div id="achievement-modal" onclick="closeAchievement(event)">
+    <div class="achievement-box" onclick="event.stopPropagation()">
+      <div class="achievement-icon" id="ach-icon">🏆</div>
+      <div class="achievement-title">— 成就解锁 —</div>
+      <div class="achievement-name" id="ach-name">成就名称</div>
+      <div class="achievement-desc" id="ach-desc">成就描述</div>
+      <button class="btn btn-gold" onclick="closeAchievement()">含泪收下</button>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    const AVATARS = ['🐮', '🐴', '🫏', '🐂', '🐃', '🦬', '🐗'];
+    const RANKS = [
+      'Lv.1 萌新牛马 · 还在试用期',
+      'Lv.5 熟练牛马 · 已会带薪如厕',
+      'Lv.10 资深牛马 · 加班不眨眼',
+      'Lv.50 顶级牛马 · 老板梦中情马',
+      'Lv.99 传说牛马 · 公司顶梁柱',
+      'Lv.∞ 至尊牛马 · 福报大圆满',
+    ];
+    const STATS = [
+      { key: 'overtime', label: '加班值', color: 'bar-red' },
+      { key: 'slack', label: '摸鱼指数', color: 'bar-green' },
+      { key: 'boss', label: '老板好感', color: 'bar-gold' },
+      { key: 'hair', label: '发量剩余', color: 'bar-purple' },
+      { key: 'sanity', label: '精神状态', color: 'bar-green' },
+      { key: 'coffee', label: '咖啡依赖', color: 'bar-gold' },
+    ];
+    const TASKS = [
+      { type: 'main', typeLabel: '【主线任务】', desc: '在工位上保持「看起来很忙」的状态至少 8 小时', reward: '奖励：老板一句「辛苦了」（无加班费）' },
+      { type: 'main', typeLabel: '【主线任务】', desc: '参加一个「这个会其实可以不发邮件」的会议', reward: '奖励：会议纪要撰写权 +1' },
+      { type: 'daily', typeLabel: '【日常任务】', desc: '回复「收到」至少 20 次，其中 15 次其实没看懂', reward: '奖励：摸鱼指数 +5' },
+      { type: 'daily', typeLabel: '【日常任务】', desc: '在 deadline 前 10 分钟提交，营造「极限操作」氛围', reward: '奖励：老板好感 +3（暂时）' },
+      { type: 'hidden', typeLabel: '【隐藏任务】', desc: '忍住不在群里回复「？」', reward: '奖励：精神 sanity +10' },
+      { type: 'hidden', typeLabel: '【隐藏任务】', desc: '成功在厕所刷手机 15 分钟不被发现', reward: '奖励：解锁成就「时间管理大师」' },
+      { type: 'main', typeLabel: '【主线任务】', desc: '帮同事背锅一次，然后微笑说「没事」', reward: '奖励：好人卡 ×1（不可兑换）' },
+      { type: 'daily', typeLabel: '【日常任务】', desc: '对着电脑屏幕点头，假装在认真思考', reward: '奖励：摸鱼指数 +8' },
+    ];
+    const TOASTS = [
+      { type: '', title: '系统提示', body: '检测到你正在摸鱼，已自动记录到 KPI' },
+      { type: 'warning', title: '⚠️ 警告', body: '老板正在接近你的工位，请立即切换屏幕！' },
+      { type: 'reward', title: '🎁 随机掉落', body: '获得道具「无效加班券」×1，使用后加班照常' },
+      { type: '', title: '系统提示', body: '你的「精神 sanity」过低，建议带薪如厕 5 分钟' },
+      { type: 'warning', title: '⚠️ 紧急通知', body: '群里有新消息@所有人，但跟你没关系，仍需回复收到' },
+      { type: 'reward', title: '🎁 福报降临', body: '恭喜触发「周末加班」随机事件！' },
+      { type: '', title: '系统提示', body: '检测到你看了眼工资条，sanity -50' },
+      { type: 'warning', title: '⚠️ 老板技能', body: '老板释放了「这很简单吧」，防御力 -999' },
+    ];
+    const ACHIEVEMENTS = [
+      { icon: '🏅', name: '早八战神', desc: '连续 30 天准时出现在工位（迟到 5 分钟以内算准时）' },
+      { icon: '🎖️', name: '收到机器', desc: '单日回复「收到」超过 50 次' },
+      { icon: '👑', name: '背锅侠', desc: '成功帮同事背锅且未获得任何感谢' },
+      { icon: '☕', name: '咖啡因依赖', desc: '单日咖啡摄入量超过 5 杯，仍觉得困' },
+      { icon: '🌙', name: '凌晨战神', desc: '在凌晨 2 点后仍在回复工作消息' },
+      { icon: '🐟', name: '摸鱼大师', desc: '摸鱼指数达到 95，且未被任何人发现' },
+      { icon: '💀', name: '发量危机', desc: '发量剩余低于 10%，系统建议植发' },
+      { icon: '🫠', name: '已读不回', desc: '工作消息已读但故意延迟 2 小时回复' },
+    ];
+    const LOGS = [
+      '<span class="highlight">[系统]</span> 宿主绑定成功，欢迎加入牛马大家庭',
+      '<span class="warn">[警告]</span> 检测到宿主试图拒绝加班，已自动驳回',
+      '<span class="gold">[奖励]</span> 完成「假装在忙」任务，摸鱼指数 +3',
+      '<span class="highlight">[系统]</span> 老板好感度波动，当前：薛定谔的满意',
+      '<span class="warn">[警告]</span> 距离下班还有 8 小时，请保持希望',
+    ];
+
+    let hostStats = {};
+
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function pickN(arr, n) {
+      const shuffled = [...arr].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, n);
+    }
+
+    // 启动动画
+    const bootLines = [
+      '> 正在扫描打工人 DNA...',
+      '> 检测到高浓度「社畜」因子 ✓',
+      '> 正在连接天道服务器...',
+      '> 绑定宿主灵魂契约...',
+      '> 加载福报模块 v9.996...',
+      '> 禁用「拒绝加班」权限...',
+      '> 启用「自动回复收到」插件...',
+      '> 系统绑定完成！欢迎，天选牛马。',
+    ];
+
+    async function bootSequence() {
+      const log = document.getElementById('boot-log');
+      const bar = document.getElementById('boot-bar');
+      for (let i = 0; i < bootLines.length; i++) {
+        log.innerHTML += bootLines[i] + '<br>';
+        bar.style.width = ((i + 1) / bootLines.length * 100) + '%';
+        await sleep(400 + Math.random() * 300);
+      }
+      await sleep(600);
+      document.getElementById('boot-screen').style.opacity = '0';
+      document.getElementById('boot-screen').style.transition = 'opacity 0.8s';
+      await sleep(800);
+      document.getElementById('boot-screen').style.display = 'none';
+      document.getElementById('main-app').classList.add('show');
+      initApp();
+    }
+
+    function sleep(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    function initApp() {
+      const params = new URLSearchParams(location.search);
+      const nameFromUrl = params.get('name');
+      if (nameFromUrl) {
+        document.getElementById('name-input').value = decodeURIComponent(nameFromUrl);
+      }
+      bindHost(false);
+      renderTasks();
+      renderLogs();
+      document.getElementById('share-link').textContent = location.href.split('?')[0];
+
+      // 随机系统通知
+      setInterval(() => {
+        if (Math.random() < 0.3) showToast(pick(TOASTS));
+      }, 8000);
+
+      setTimeout(() => showAchievement(pick(ACHIEVEMENTS)), 3000);
+    }
+
+    function bindHost(showToast = true) {
+      const input = document.getElementById('name-input').value.trim();
+      const name = input || pick(['神秘打工人', '天选牛马', '福报继承人', '加班侠', '收到bot']);
+      document.getElementById('host-name').textContent = name;
+      document.getElementById('avatar').textContent = pick(AVATARS);
+      document.getElementById('host-rank').textContent = pick(RANKS);
+      document.getElementById('host-id').textContent = `UID: NM-${Date.now().toString().slice(-8)}-${rand(100, 999)}`;
+
+      hostStats = {
+        overtime: rand(60, 99),
+        slack: rand(40, 95),
+        boss: rand(10, 60),
+        hair: rand(5, 40),
+        sanity: rand(15, 55),
+        coffee: rand(50, 99),
+      };
+      renderStats();
+      if (showToast) {
+        toast('系统提示', `宿主「${name}」绑定成功！从此开启牛马人生`, '');
+        addLog(`<span class="highlight">[绑定]</span> 宿主 ${name} 已重新绑定`);
+      }
+    }
+
+    function renderStats() {
+      const list = document.getElementById('stat-list');
+      list.innerHTML = STATS.map(s => `
+        <div class="stat-row">
+          <span class="stat-label">${s.label}</span>
+          <div class="stat-bar-bg">
+            <div class="stat-bar ${s.color}" style="width:0%" data-val="${hostStats[s.key]}"></div>
+          </div>
+          <span class="stat-val">${hostStats[s.key]}</span>
+        </div>
+      `).join('');
+      requestAnimationFrame(() => {
+        list.querySelectorAll('.stat-bar').forEach(bar => {
+          bar.style.width = bar.dataset.val + '%';
+        });
+      });
+    }
+
+    function renderTasks() {
+      const tasks = pickN(TASKS, 3);
+      document.getElementById('task-list').innerHTML = tasks.map(t => `
+        <div class="task-card">
+          <div class="task-type ${t.type}">${t.typeLabel}</div>
+          <div class="task-desc">${t.desc}</div>
+          <div class="task-reward">${t.reward}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderLogs() {
+      const log = document.getElementById('sys-log');
+      log.innerHTML = pickN(LOGS, 4).join('<br>');
+    }
+
+    function addLog(html) {
+      const log = document.getElementById('sys-log');
+      log.innerHTML = html + '<br>' + log.innerHTML;
+    }
+
+    function refreshTasks() {
+      renderTasks();
+      toast('系统提示', '任务已刷新！内容没换，但你的福报增加了', '');
+      addLog('<span class="highlight">[任务]</span> 宿主尝试刷新任务，系统：换汤不换药');
+    }
+
+    function claimReward() {
+      const rewards = [
+        '获得「精神鼓励」×1（不可转让）',
+        '获得「下次一定」承诺 ×1',
+        '获得「好好干公司不会亏待你」语录 ×1',
+        '获得空气 ×1（老板画的饼）',
+        '获得调休 0.5 天（需审批，审批人：老板）',
+      ];
+      toast('🎁 福报降临', pick(rewards), 'reward');
+      hostStats.sanity = Math.min(100, hostStats.sanity + rand(1, 5));
+      hostStats.boss = Math.min(100, hostStats.boss + rand(0, 2));
+      renderStats();
+      addLog('<span class="gold">[福报]</span> 宿主领取今日福报，sanity 微弱回升');
+      showAchievement(pick(ACHIEVEMENTS));
+    }
+
+    function tryQuit() {
+      const reasons = [
+        '系统提示：离职申请已提交，审批人：你的房贷',
+        '系统提示：离职申请被驳回，原因：你还没完成本周福报',
+        '系统提示：检测到「冲动离职」，已自动冷却 24 小时',
+        '系统提示：老板释放了技能「再加把劲」，离职失败',
+        '系统提示：你的发量不支持裸辞，申请已撤回',
+      ];
+      toast('⚠️ 离职失败', pick(reasons), 'warning');
+      hostStats.sanity = Math.max(0, hostStats.sanity - rand(5, 15));
+      hostStats.boss = Math.max(0, hostStats.boss - rand(3, 10));
+      renderStats();
+      addLog('<span class="warn">[离职]</span> 宿主尝试离职，系统已自动驳回');
+    }
+
+    function toast(title, body, type = '') {
+      showToast({ title, body, type });
+    }
+
+    function showToast({ title, body, type = '' }) {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    function showAchievement(ach) {
+      document.getElementById('ach-icon').textContent = ach.icon;
+      document.getElementById('ach-name').textContent = ach.name;
+      document.getElementById('ach-desc').textContent = ach.desc;
+      document.getElementById('achievement-modal').classList.add('show');
+    }
+
+    function closeAchievement(e) {
+      if (e && e.target !== document.getElementById('achievement-modal')) return;
+      document.getElementById('achievement-modal').classList.remove('show');
+    }
+
+    function copyLink() {
+      const name = document.getElementById('host-name').textContent;
+      const base = location.href.split('?')[0];
+      const link = name && name !== '神秘打工人'
+        ? `${base}?name=${encodeURIComponent(name)}`
+        : base;
+      navigator.clipboard?.writeText(link).then(() => {
+        toast('📋 已复制', '链接已复制，发给同事一起绑定牛马身份！', 'reward');
+      }).catch(() => {
+        prompt('复制这个链接发给同事：', link);
+      });
+    }
+
+    bootSequence();
+  </script>
+</body>
+</html>
