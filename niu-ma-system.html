@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>【系统绑定成功】牛马打工人系统 v10.0</title>
+  <meta name="description" content="天选牛马娱乐系统：暴打老板、摸鱼、福报抽奖、带薪如厕">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #070b14; --panel: rgba(12, 18, 34, 0.94); --border: rgba(0, 255, 200, 0.35);
+      --glow: #00ffc8; --gold: #ffd700; --danger: #ff4757; --purple: #a855f7;
+      --text: #e8f4f8; --muted: #7a8fa0; --blue: #3b82f6;
+    }
+    body {
+      font-family: 'Noto Sans SC', -apple-system, sans-serif;
+      background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden;
+    }
+    .bg-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        linear-gradient(rgba(0,255,200,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,200,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .bg-glow { position: fixed; width: 520px; height: 520px; border-radius: 50%; filter: blur(120px); opacity: 0.14; pointer-events: none; z-index: 0; }
+    .bg-glow-1 { top: -180px; right: -80px; background: var(--glow); }
+    .bg-glow-2 { bottom: -180px; left: -80px; background: var(--purple); }
+
+    #boot-screen {
+      position: fixed; inset: 0; background: #000; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px;
+    }
+    .boot-logo {
+      font-size: clamp(26px, 6vw, 44px); font-weight: 900; margin-bottom: 28px;
+      background: linear-gradient(135deg, var(--glow), var(--gold));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      animation: pulse 2s infinite;
+    }
+    .boot-text { font-family: ui-monospace, monospace; color: var(--glow); font-size: 13px; line-height: 1.9; width: min(480px, 90vw); }
+    .boot-bar-wrap { width: min(480px, 90vw); height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 20px; overflow: hidden; }
+    .boot-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--glow), var(--gold)); transition: width .25s; box-shadow: 0 0 10px var(--glow); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+
+    #main-app { position: relative; z-index: 1; max-width: 980px; margin: 0 auto; padding: 16px 14px 100px; opacity: 0; transition: opacity .7s; }
+    #main-app.show { opacity: 1; }
+
+    .sys-header { text-align: center; padding: 18px 0 22px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .sys-badge {
+      display: inline-block; padding: 4px 12px; border: 1px solid var(--gold); color: var(--gold);
+      font-size: 11px; letter-spacing: 2px; border-radius: 2px; margin-bottom: 10px;
+    }
+    .sys-title {
+      font-size: clamp(22px, 5vw, 34px); font-weight: 900;
+      background: linear-gradient(135deg, #fff 0%, var(--glow) 50%, var(--gold) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .sys-subtitle { color: var(--muted); font-size: 13px; margin-top: 8px; }
+
+    .top-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px;
+    }
+    .chip {
+      background: rgba(0,255,200,0.08); border: 1px solid var(--border); border-radius: 999px;
+      padding: 6px 12px; font-size: 12px; color: var(--glow);
+    }
+    .chip strong { color: var(--gold); }
+
+    .nav-tabs {
+      display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 14px;
+      scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .nav-tab {
+      flex: 0 0 auto; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+      background: rgba(0,255,200,0.05); color: var(--muted); font-size: 13px; cursor: pointer;
+      font-family: inherit; white-space: nowrap; transition: .2s;
+    }
+    .nav-tab.active, .nav-tab:hover {
+      color: var(--glow); background: rgba(0,255,200,0.15); box-shadow: 0 0 12px rgba(0,255,200,0.2);
+    }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; margin-bottom: 14px; backdrop-filter: blur(10px); position: relative; overflow: hidden;
+    }
+    .panel::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--glow), transparent);
+    }
+    .panel-title { font-size: 13px; color: var(--glow); letter-spacing: 1px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .panel-title::before { content: '▸'; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .bind-info { display: grid; grid-template-columns: 72px 1fr; gap: 12px; align-items: center; }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%; border: 2px solid var(--glow);
+      background: linear-gradient(135deg, #1a2744, #0d1520); display: flex; align-items: center; justify-content: center;
+      font-size: 34px; box-shadow: 0 0 18px rgba(0,255,200,0.3);
+    }
+    .bind-name { font-size: 20px; font-weight: 700; }
+    .bind-rank { color: var(--gold); font-size: 13px; margin-top: 4px; }
+    .bind-id { color: var(--muted); font-size: 11px; margin-top: 4px; font-family: monospace; }
+    .name-input-wrap { margin-top: 14px; display: flex; gap: 8px; }
+    .name-input {
+      flex: 1; padding: 10px 12px; background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+    }
+    .name-input:focus { border-color: var(--glow); box-shadow: 0 0 10px rgba(0,255,200,0.2); }
+
+    .stat-list { display: flex; flex-direction: column; gap: 12px; }
+    .stat-row { display: grid; grid-template-columns: 88px 1fr 42px; align-items: center; gap: 10px; }
+    .stat-label { font-size: 12px; color: var(--muted); }
+    .stat-bar-bg { height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+    .stat-bar { height: 100%; border-radius: 4px; transition: width .8s ease; position: relative; }
+    .stat-bar::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: shimmer 2s infinite;
+    }
+    @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+    .stat-val { font-size: 12px; font-weight: 700; text-align: right; font-family: monospace; }
+    .bar-green { background: linear-gradient(90deg, #00b894, var(--glow)); }
+    .bar-gold { background: linear-gradient(90deg, #f39c12, var(--gold)); }
+    .bar-red { background: linear-gradient(90deg, #c0392b, var(--danger)); }
+    .bar-purple { background: linear-gradient(90deg, #6c5ce7, var(--purple)); }
+    .bar-blue { background: linear-gradient(90deg, #1d4ed8, var(--blue)); }
+
+    .task-card {
+      background: rgba(0,255,200,0.05); border: 1px solid rgba(0,255,200,0.2);
+      border-radius: 8px; padding: 14px; margin-bottom: 10px;
+    }
+    .task-type { font-size: 11px; color: var(--danger); letter-spacing: 1px; margin-bottom: 6px; }
+    .task-type.daily { color: var(--glow); }
+    .task-type.hidden { color: var(--purple); }
+    .task-desc { font-size: 14px; line-height: 1.55; margin-bottom: 8px; }
+    .task-reward { font-size: 12px; color: var(--gold); }
+
+    .btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .btn {
+      padding: 10px 16px; border-radius: 8px; border: 1px solid var(--border);
+      background: rgba(0,255,200,0.08); color: var(--glow); font-size: 13px; cursor: pointer;
+      transition: .2s; font-family: inherit;
+    }
+    .btn:hover { background: rgba(0,255,200,0.2); box-shadow: 0 0 14px rgba(0,255,200,0.25); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-gold { border-color: rgba(255,215,0,0.5); color: var(--gold); background: rgba(255,215,0,0.08); }
+    .btn-gold:hover { background: rgba(255,215,0,0.2); }
+    .btn-danger { border-color: rgba(255,71,87,0.5); color: var(--danger); background: rgba(255,71,87,0.08); }
+    .btn-purple { border-color: rgba(168,85,247,0.5); color: #d8b4fe; background: rgba(168,85,247,0.1); }
+    .btn-blue { border-color: rgba(59,130,246,0.5); color: #93c5fd; background: rgba(59,130,246,0.1); }
+    .btn.big { font-size: 16px; padding: 14px 22px; font-weight: 700; }
+
+    .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+    .game-card {
+      border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center;
+      background: rgba(0,255,200,0.04); cursor: pointer; transition: .2s;
+    }
+    .game-card:hover { transform: translateY(-2px); box-shadow: 0 0 18px rgba(0,255,200,0.2); border-color: var(--glow); }
+    .game-card .icon { font-size: 36px; margin-bottom: 8px; }
+    .game-card h4 { font-size: 14px; margin-bottom: 6px; }
+    .game-card p { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+    .log-list { max-height: 180px; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 12px; line-height: 1.9; color: var(--muted); }
+    .log-list .highlight { color: var(--glow); }
+    .log-list .warn { color: var(--danger); }
+    .log-list .gold { color: var(--gold); }
+
+    .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+    .inv-item {
+      border: 1px solid rgba(255,215,0,0.3); border-radius: 8px; padding: 10px 8px; text-align: center;
+      background: rgba(255,215,0,0.06); font-size: 12px;
+    }
+    .inv-item .ico { font-size: 24px; display: block; margin-bottom: 4px; }
+    .inv-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 20px; }
+
+    /* Modals */
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.82); z-index: 8000;
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal.show { display: flex; }
+    .modal-box {
+      background: linear-gradient(160deg, #121a2e, #0b1020); border: 2px solid var(--border);
+      border-radius: 16px; padding: 18px; width: min(520px, 100%); max-height: 90vh; overflow: auto;
+      box-shadow: 0 0 50px rgba(0,255,200,0.15); position: relative;
+    }
+    .modal-box.gold-border { border-color: var(--gold); box-shadow: 0 0 50px rgba(255,215,0,0.25); }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-head h3 { font-size: 16px; color: var(--glow); }
+    .modal-close {
+      background: transparent; border: none; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1;
+    }
+
+    /* Fight game */
+    .fight-arena {
+      position: relative; height: 280px; border-radius: 12px; overflow: hidden;
+      background: linear-gradient(180deg, #1a1030 0%, #0d1528 60%, #162033 100%);
+      border: 1px solid var(--border); margin-bottom: 12px;
+      user-select: none; touch-action: manipulation;
+    }
+    .fight-floor {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 48px;
+      background: repeating-linear-gradient(90deg, #243044 0 20px, #1a2436 20px 40px);
+      border-top: 2px solid rgba(0,255,200,0.25);
+    }
+    .fighter {
+      position: absolute; bottom: 48px; width: 70px; text-align: center; transition: left .15s, transform .1s;
+    }
+    .fighter .face { font-size: 48px; filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); transition: transform .08s; }
+    .fighter .name-tag { font-size: 11px; color: #fff; background: rgba(0,0,0,.45); border-radius: 4px; padding: 2px 6px; display: inline-block; }
+    .fighter.hit .face { transform: translateX(8px) rotate(8deg); filter: brightness(1.4) saturate(2); }
+    .fighter.punch .face { transform: scale(1.15) translateX(10px); }
+    .fighter.ko { opacity: .35; transform: rotate(90deg) translateY(20px); }
+    #playerF { left: 18%; }
+    #enemyF { right: 18%; left: auto; }
+    .hp-wrap { position: absolute; top: 10px; left: 10px; right: 10px; display: flex; gap: 10px; }
+    .hp-box { flex: 1; }
+    .hp-label { font-size: 11px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .hp-bar { height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+    .hp-fill { height: 100%; width: 100%; transition: width .2s; }
+    .hp-player { background: linear-gradient(90deg, #00b894, var(--glow)); }
+    .hp-enemy { background: linear-gradient(90deg, #c0392b, var(--danger)); }
+    .fight-msg {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-size: 28px; font-weight: 900; color: var(--gold); text-shadow: 0 0 20px rgba(255,215,0,.6);
+      pointer-events: none; opacity: 0; transition: .2s;
+    }
+    .fight-msg.show { opacity: 1; transform: translate(-50%,-60%) scale(1.1); }
+    .combo-text { position: absolute; top: 70px; right: 16px; color: var(--danger); font-weight: 900; font-size: 18px; opacity: 0; }
+    .combo-text.show { opacity: 1; animation: comboPop .3s; }
+    @keyframes comboPop { from{transform:scale(.5)} to{transform:scale(1)} }
+    .dmg-float {
+      position: absolute; font-weight: 900; color: var(--gold); pointer-events: none;
+      animation: floatUp .8s forwards; font-size: 18px; text-shadow: 0 0 8px #000;
+    }
+    @keyframes floatUp { from{opacity:1;transform:translateY(0)} to{opacity:0;transform:translateY(-50px)} }
+
+    /* Clicker */
+    .clicker-area {
+      height: 220px; border-radius: 12px; border: 1px dashed var(--border);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(0,255,200,0.04); cursor: pointer; user-select: none; position: relative; overflow: hidden;
+    }
+    .clicker-fish { font-size: 72px; transition: transform .08s; }
+    .clicker-area:active .clicker-fish { transform: scale(1.2) rotate(-8deg); }
+    .click-float {
+      position: absolute; color: var(--glow); font-weight: 700; pointer-events: none;
+      animation: floatUp .7s forwards;
+    }
+
+    /* Gacha */
+    .gacha-result {
+      min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border: 1px solid var(--border); border-radius: 12px; margin: 12px 0; padding: 16px;
+      background: radial-gradient(circle at center, rgba(255,215,0,0.12), transparent 70%);
+    }
+    .gacha-result .big { font-size: 56px; margin-bottom: 8px; }
+    .rarity-N { color: #94a3b8; }
+    .rarity-R { color: #60a5fa; }
+    .rarity-SR { color: #c084fc; }
+    .rarity-SSR { color: var(--gold); text-shadow: 0 0 12px rgba(255,215,0,.5); }
+
+    /* Toilet */
+    .toilet-timer {
+      font-size: 48px; font-weight: 900; text-align: center; font-family: monospace;
+      color: var(--glow); margin: 16px 0; letter-spacing: 2px;
+    }
+    .toilet-status { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+
+    /* Quiz */
+    .quiz-q { font-size: 16px; line-height: 1.5; margin-bottom: 14px; }
+    .quiz-opt {
+      display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 12px 14px;
+      border-radius: 8px; border: 1px solid var(--border); background: rgba(0,255,200,0.05);
+      color: var(--text); cursor: pointer; font-family: inherit; font-size: 14px;
+    }
+    .quiz-opt:hover { border-color: var(--glow); }
+    .quiz-opt.correct { border-color: var(--glow); background: rgba(0,255,200,0.2); }
+    .quiz-opt.wrong { border-color: var(--danger); background: rgba(255,71,87,0.15); }
+
+    #toast-container {
+      position: fixed; top: 16px; right: 16px; z-index: 9000; display: flex; flex-direction: column; gap: 8px; max-width: 320px;
+    }
+    .toast {
+      background: rgba(10,14,23,0.96); border: 1px solid var(--border); border-left: 3px solid var(--glow);
+      border-radius: 8px; padding: 12px 14px; animation: slideIn .35s ease, fadeOut .35s ease 3.5s forwards;
+      box-shadow: 0 4px 18px rgba(0,0,0,.5);
+    }
+    .toast.warning { border-left-color: var(--danger); }
+    .toast.reward { border-left-color: var(--gold); }
+    .toast-title { font-size: 11px; color: var(--glow); letter-spacing: 1px; margin-bottom: 4px; }
+    .toast.warning .toast-title { color: var(--danger); }
+    .toast.reward .toast-title { color: var(--gold); }
+    .toast-body { font-size: 13px; line-height: 1.45; }
+    @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes fadeOut { to{opacity:0;transform:translateX(16px)} }
+
+    #achievement-modal .achievement-box {
+      background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid var(--gold);
+      border-radius: 16px; padding: 28px; text-align: center; max-width: 380px; width: 100%;
+      animation: popIn .45s cubic-bezier(.175,.885,.32,1.275); box-shadow: 0 0 50px rgba(255,215,0,.3);
+    }
+    @keyframes popIn { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
+    .achievement-icon { font-size: 56px; margin-bottom: 12px; }
+    .achievement-title { font-size: 11px; color: var(--gold); letter-spacing: 3px; margin-bottom: 6px; }
+    .achievement-name { font-size: 20px; font-weight: 900; margin-bottom: 10px; }
+    .achievement-desc { color: var(--muted); font-size: 13px; line-height: 1.55; margin-bottom: 18px; }
+
+    .footer-note {
+      text-align: center; color: var(--muted); font-size: 12px; margin-top: 24px; padding-top: 18px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .share-link {
+      display: inline-block; margin-top: 8px; padding: 6px 12px; background: rgba(0,255,200,0.1);
+      border: 1px solid var(--border); border-radius: 4px; color: var(--glow); font-size: 11px;
+      font-family: monospace; cursor: pointer; word-break: break-all;
+    }
+
+    .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    .score-row { display: flex; justify-content: space-around; text-align: center; margin: 10px 0; }
+    .score-row .n { font-size: 22px; font-weight: 900; color: var(--gold); }
+    .score-row .l { font-size: 11px; color: var(--muted); }
+
+    @media (max-width: 480px) {
+      .stat-row { grid-template-columns: 76px 1fr 36px; }
+      .btn-group { flex-direction: column; }
+      .btn { width: 100%; text-align: center; }
+      .fight-arena { height: 250px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+
+  <div id="boot-screen">
+    <div class="boot-logo">🐴 牛马打工人系统 v10.0</div>
+    <div class="boot-text" id="boot-log"></div>
+    <div class="boot-bar-wrap"><div class="boot-bar" id="boot-bar"></div></div>
+  </div>
+
+  <div id="main-app">
+    <header class="sys-header">
+      <div class="sys-badge">⚡ SYSTEM ONLINE · 天道娱乐版</div>
+      <h1 class="sys-title">牛马打工人系统</h1>
+      <p class="sys-subtitle">绑定成功 · 拒绝无效 · 加班已写入灵魂契约</p>
+    </header>
+
+    <div class="top-bar">
+      <div class="chip">福报币 <strong id="coin-display">0</strong></div>
+      <div class="chip">摸鱼分 <strong id="fish-display">0</strong></div>
+      <div class="chip">连击纪录 <strong id="combo-best">0</strong></div>
+      <div class="chip">打卡 <strong id="checkin-display">未打卡</strong></div>
+    </div>
+
+    <div class="nav-tabs" id="nav-tabs">
+      <button class="nav-tab active" data-tab="home">🏠 宿主面板</button>
+      <button class="nav-tab" data-tab="games">🎮 娱乐副本</button>
+      <button class="nav-tab" data-tab="tasks">📜 系统任务</button>
+      <button class="nav-tab" data-tab="bag">🎒 背包仓库</button>
+      <button class="nav-tab" data-tab="log">📡 系统日志</button>
+    </div>
+
+    <!-- HOME -->
+    <div class="tab-panel active" id="tab-home">
+      <div class="panel">
+        <div class="panel-title">宿主信息面板</div>
+        <div class="bind-info">
+          <div class="avatar" id="avatar">🐮</div>
+          <div>
+            <div class="bind-name" id="host-name">神秘打工人</div>
+            <div class="bind-rank" id="host-rank">Lv.∞ 资深牛马 · 福报收集者</div>
+            <div class="bind-id" id="host-id">UID: NM-20260801-996007</div>
+          </div>
+        </div>
+        <div class="name-input-wrap">
+          <input class="name-input" id="name-input" placeholder="输入名字，定制专属牛马档案..." maxlength="12">
+          <button class="btn" onclick="bindHost()">重新绑定</button>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-gold" onclick="dailyCheckin()">📅 每日打卡领福报</button>
+          <button class="btn btn-purple" onclick="showRandomEvent()">🎲 触发随机事件</button>
+          <button class="btn btn-danger" onclick="tryQuit()">🚪 申请离职</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">核心属性 · 实时监测</div>
+        <div class="stat-list" id="stat-list"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">系统快捷入口</div>
+        <div class="game-grid">
+          <div class="game-card" onclick="openFight()"><div class="icon">👊</div><h4>暴打老板</h4><p>压力释放格斗副本</p></div>
+          <div class="game-card" onclick="openClicker()"><div class="icon">🐟</div><h4>极限摸鱼</h4><p>连点赚摸鱼分</p></div>
+          <div class="game-card" onclick="openGacha()"><div class="icon">🎁</div><h4>福报抽奖</h4><p>SSR 空气饼等你</p></div>
+          <div class="game-card" onclick="openToilet()"><div class="icon">🚽</div><h4>带薪如厕</h4><p>计时挑战不被发现</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GAMES -->
+    <div class="tab-panel" id="tab-games">
+      <div class="panel">
+        <div class="panel-title">娱乐副本大厅 · 老板看不到这里</div>
+        <div class="game-grid">
+          <div class="game-card" onclick="openFight('boss')"><div class="icon">👔</div><h4>暴打老板</h4><p>对战：画饼大师</p></div>
+          <div class="game-card" onclick="openFight('coworker')"><div class="icon">🧑‍💼</div><h4>暴打同事</h4><p>对战：甩锅达人</p></div>
+          <div class="game-card" onclick="openFight('client')"><div class="icon">📣</div><h4>暴打甲方</h4><p>对战：需求瞬变兽</p></div>
+          <div class="game-card" onclick="openClicker()"><div class="icon">🐟</div><h4>极限摸鱼</h4><p>30 秒连点挑战</p></div>
+          <div class="game-card" onclick="openGacha()"><div class="icon">🎰</div><h4>福报十连</h4><p>抽空气饼 / 好人卡</p></div>
+          <div class="game-card" onclick="openToilet()"><div class="icon">🚽</div><h4>带薪如厕</h4><p>看你能躲多久</p></div>
+          <div class="game-card" onclick="openQuiz()"><div class="icon">🧠</div><h4>社畜考试</h4><p>答对涨 sanity</p></div>
+          <div class="game-card" onclick="openWorkSim()"><div class="icon">⌨️</div><h4>假装很忙</h4><p>键盘侠打字模拟</p></div>
+        </div>
+        <p class="hint">提示：打赢格斗、摸鱼、抽奖都能获得福报币；福报币可在抽奖中消费。</p>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="tab-panel" id="tab-tasks">
+      <div class="panel">
+        <div class="panel-title">今日系统任务 · 不可拒绝</div>
+        <div id="task-list"></div>
+        <div class="btn-group">
+          <button class="btn" onclick="refreshTasks()">🔄 刷新任务</button>
+          <button class="btn btn-gold" onclick="claimReward()">✨ 领取今日福报</button>
+          <button class="btn btn-blue" onclick="completeFakeTask()">✅ 假装完成一项</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BAG -->
+    <div class="tab-panel" id="tab-bag">
+      <div class="panel">
+        <div class="panel-title">背包仓库 · 不可交易</div>
+        <div class="inv-grid" id="inv-grid"><div class="inv-empty">仓库空空如也，去抽奖 / 打怪吧</div></div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="tab-panel" id="tab-log">
+      <div class="panel">
+        <div class="panel-title">系统日志</div>
+        <div class="log-list" id="sys-log"></div>
+      </div>
+    </div>
+
+    <footer class="footer-note">
+      <p>⚠️ 本系统纯属娱乐，如有雷同，说明你们公司也一样</p>
+      <p style="margin-top:8px;">分享给同事，一起绑定牛马身份 👇</p>
+      <div class="share-link" id="share-link" onclick="copyLink()" title="点击复制链接"></div>
+    </footer>
+  </div>
+
+  <!-- Fight Modal -->
+  <div class="modal" id="fight-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="fight-title">👊 压力释放格斗</h3>
+        <button class="modal-close" onclick="closeModal('fight-modal')">×</button>
+      </div>
+      <div class="fight-arena" id="fight-arena" onclick="playerAttack()">
+        <div class="hp-wrap">
+          <div class="hp-box">
+            <div class="hp-label"><span id="p-name">你</span><span id="p-hp-txt">100</span></div>
+            <div class="hp-bar"><div class="hp-fill hp-player" id="p-hp"></div></div>
+          </div>
+          <div class="hp-box">
+            <div class="hp-label"><span id="e-name">老板</span><span id="e-hp-txt">100</span></div>
+            <div class="hp-bar"><div class="hp-fill hp-enemy" id="e-hp"></div></div>
+          </div>
+        </div>
+        <div class="combo-text" id="combo-text">COMBO x2</div>
+        <div class="fighter" id="playerF"><div class="face">🐮</div><div class="name-tag">牛马勇者</div></div>
+        <div class="fighter" id="enemyF"><div class="face">👔</div><div class="name-tag">画饼老板</div></div>
+        <div class="fight-floor"></div>
+        <div class="fight-msg" id="fight-msg">KO!</div>
+      </div>
+      <p class="hint" style="text-align:center">点击场地 / 下方按钮攻击 · 连击越高伤害越高</p>
+      <div class="btn-group">
+        <button class="btn big btn-danger" onclick="playerAttack()">💥 暴打一下</button>
+        <button class="btn btn-gold" onclick="playerSkill()">⚡ 释放技能：甩锅回旋踢</button>
+        <button class="btn" onclick="resetFight()">🔄 再来一局</button>
+      </div>
+      <div class="score-row">
+        <div><div class="n" id="fight-combo">0</div><div class="l">当前连击</div></div>
+        <div><div class="n" id="fight-dmg">0</div><div class="l">总伤害</div></div>
+        <div><div class="n" id="fight-wins">0</div><div class="l">胜场</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Clicker Modal -->
+  <div class="modal" id="clicker-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>🐟 极限摸鱼挑战</h3>
+        <button class="modal-close" onclick="closeClicker()">×</button>
+      </div>
+      <div class="score-row">
+        <div><div class="n" id="click-score">0</div><div class="l">本次摸鱼</div></div>
+        <div><div class="n" id="click-time">30</div><div class="l">剩余秒</div></div>
+        <div><div class="n" id="click-best">0</div><div class="l">历史最高</div></div>
+      </div>
+      <div class="clicker-area" id="clicker-area" onclick="doClick(event)">
+        <div class="clicker-fish">🐟</div>
+        <div style="margin-top:8px;color:var(--muted);font-size:13px">狂点屏幕摸鱼！</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-gold big" onclick="startClicker()">▶️ 开始 30 秒摸鱼</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gacha Modal -->
+  <div class="modal" id="gacha-modal">
+    <div class="modal-box gold-border">
+      <div class="modal-head">
+        <h3>🎰 福报抽奖机</h3>
+        <button class="modal-close" onclick="closeModal('gacha-modal')">×</button>
+      </div>
+      <p class="hint">单抽 10 福报币 · 十连 88 福报币（打折的福报）</p>
+      <div class="gacha-result" id="gacha-result">
+        <div class="big">❓</div>
+        <div>点下方按钮开启福报</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-gold" onclick="doGacha(1)">✨ 单抽 (10)</button>
+        <button class="btn btn-purple" onclick="doGacha(10)">🌈 十连 (88)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toilet Modal -->
+  <div class="modal" id="toilet-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>🚽 带薪如厕挑战</h3>
+        <button class="modal-close" onclick="stopToilet(true)">×</button>
+      </div>
+      <div class="toilet-status" id="toilet-status">准备潜入卫生间…</div>
+      <div class="toilet-timer" id="toilet-timer">00:00</div>
+      <p class="hint" style="text-align:center">越久奖励越高，但随时可能被老板抓包！</p>
+      <div class="btn-group">
+        <button class="btn btn-gold big" id="toilet-start" onclick="startToilet()">🚀 开始带薪如厕</button>
+        <button class="btn btn-danger" onclick="stopToilet(false)">🏃 立刻撤回工位</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quiz Modal -->
+  <div class="modal" id="quiz-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>🧠 社畜资格考试</h3>
+        <button class="modal-close" onclick="closeModal('quiz-modal')">×</button>
+      </div>
+      <div class="quiz-q" id="quiz-q">题目加载中…</div>
+      <div id="quiz-opts"></div>
+      <p class="hint" id="quiz-feedback"></p>
+      <div class="btn-group">
+        <button class="btn" onclick="nextQuiz()">➡️ 下一题</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Work Sim Modal -->
+  <div class="modal" id="work-modal">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3>⌨️ 假装很忙模拟器</h3>
+        <button class="modal-close" onclick="closeWorkSim()">×</button>
+      </div>
+      <p class="hint">疯狂打字，屏幕会刷代码感。老板经过时你看起来很专业。</p>
+      <div class="score-row">
+        <div><div class="n" id="work-keys">0</div><div class="l">按键数</div></div>
+        <div><div class="n" id="work-busy">0%</div><div class="l">忙碌伪装度</div></div>
+      </div>
+      <pre id="work-screen" style="height:160px;overflow:hidden;background:#000;border-radius:8px;padding:10px;font-size:11px;color:#0f0;border:1px solid #033;"></pre>
+      <input class="name-input" id="work-input" placeholder="在这里疯狂打字…" autocomplete="off" style="margin-top:10px">
+      <div class="btn-group">
+        <button class="btn btn-gold" onclick="claimBusyReward()">领取忙碌伪装奖励</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Achievement -->
+  <div class="modal" id="achievement-modal" onclick="closeAchievement(event)">
+    <div class="achievement-box" onclick="event.stopPropagation()">
+      <div class="achievement-icon" id="ach-icon">🏆</div>
+      <div class="achievement-title">— 成就解锁 —</div>
+      <div class="achievement-name" id="ach-name">成就名称</div>
+      <div class="achievement-desc" id="ach-desc">成就描述</div>
+      <button class="btn btn-gold" onclick="closeAchievement()">含泪收下</button>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script>
+    const AVATARS = ['🐮','🐴','🫏','🐂','🐃','🦬','🐗'];
+    const RANKS = [
+      'Lv.1 萌新牛马 · 还在试用期',
+      'Lv.5 熟练牛马 · 已会带薪如厕',
+      'Lv.10 资深牛马 · 加班不眨眼',
+      'Lv.50 顶级牛马 · 老板梦中情马',
+      'Lv.99 传说牛马 · 公司顶梁柱',
+      'Lv.∞ 至尊牛马 · 福报大圆满',
+    ];
+    const STATS = [
+      { key: 'overtime', label: '加班值', color: 'bar-red' },
+      { key: 'slack', label: '摸鱼指数', color: 'bar-green' },
+      { key: 'boss', label: '老板好感', color: 'bar-gold' },
+      { key: 'hair', label: '发量剩余', color: 'bar-purple' },
+      { key: 'sanity', label: '精神状态', color: 'bar-blue' },
+      { key: 'coffee', label: '咖啡依赖', color: 'bar-gold' },
+    ];
+    const TASKS = [
+      { type: 'main', typeLabel: '【主线任务】', desc: '在工位保持「看起来很忙」至少 8 小时', reward: '奖励：老板一句「辛苦了」（无加班费）' },
+      { type: 'main', typeLabel: '【主线任务】', desc: '参加一个「其实可以发邮件」的会议', reward: '奖励：会议纪要撰写权 +1' },
+      { type: 'daily', typeLabel: '【日常任务】', desc: '回复「收到」至少 20 次，其中 15 次没看懂', reward: '奖励：摸鱼分 +50' },
+      { type: 'daily', typeLabel: '【日常任务】', desc: 'deadline 前 10 分钟提交，营造极限操作', reward: '奖励：老板好感 +3（暂时）' },
+      { type: 'hidden', typeLabel: '【隐藏任务】', desc: '忍住不在群里回「？」', reward: '奖励：sanity +10' },
+      { type: 'hidden', typeLabel: '【隐藏任务】', desc: '厕所刷手机 15 分钟不被发现', reward: '奖励：解锁成就「时间管理大师」' },
+      { type: 'main', typeLabel: '【主线任务】', desc: '帮同事背锅一次，然后微笑说「没事」', reward: '奖励：好人卡 ×1（不可兑换）' },
+      { type: 'daily', typeLabel: '【日常任务】', desc: '对着屏幕点头，假装在认真思考', reward: '奖励：摸鱼分 +30' },
+    ];
+    const TOASTS = [
+      { type: '', title: '系统提示', body: '检测到你正在摸鱼，已自动记录到 KPI' },
+      { type: 'warning', title: '⚠️ 警告', body: '老板正在接近你的工位，请立即切换屏幕！' },
+      { type: 'reward', title: '🎁 随机掉落', body: '获得道具「无效加班券」×1' },
+      { type: '', title: '系统提示', body: 'sanity 过低，建议带薪如厕 5 分钟' },
+      { type: 'warning', title: '⚠️ 紧急通知', body: '@所有人 来了，请回复收到' },
+      { type: 'reward', title: '🎁 福报降临', body: '恭喜触发「周末加班」随机事件！' },
+      { type: 'warning', title: '⚠️ 老板技能', body: '老板释放「这很简单吧」，防御力 -999' },
+    ];
+    const EVENTS = [
+      { title: '突发会议', body: '老板拉你进一个没有议程的会，sanity -15', effect: () => { hostStats.sanity = Math.max(0, hostStats.sanity - 15); addCoins(5); } },
+      { title: '咖啡续命', body: '你灌下第 4 杯美式，咖啡依赖 +20，加班值 -5', effect: () => { hostStats.coffee = Math.min(100, hostStats.coffee + 20); hostStats.overtime = Math.max(0, hostStats.overtime - 5); } },
+      { title: '甩锅成功', body: '你成功把锅甩给实习生，老板好感 +8（你真坏）', effect: () => { hostStats.boss = Math.min(100, hostStats.boss + 8); addCoins(15); } },
+      { title: '发量危机', body: '镜子里又少了几根，发量 -10', effect: () => { hostStats.hair = Math.max(1, hostStats.hair - 10); } },
+      { title: '摸鱼天堂', body: '老板出差了！摸鱼指数 +25，福报币 +30', effect: () => { hostStats.slack = Math.min(100, hostStats.slack + 25); addCoins(30); } },
+      { title: '甲方暴击', body: '甲方说「能不能今晚改完」，加班值 +30', effect: () => { hostStats.overtime = Math.min(100, hostStats.overtime + 30); hostStats.sanity = Math.max(0, hostStats.sanity - 10); } },
+    ];
+    const ACHIEVEMENTS = [
+      { icon: '🏅', name: '早八战神', desc: '连续 30 天准时出现（迟到 5 分钟以内算准时）' },
+      { icon: '🎖️', name: '收到机器', desc: '单日回复「收到」超过 50 次' },
+      { icon: '👑', name: '背锅侠', desc: '成功帮同事背锅且未获得任何感谢' },
+      { icon: '☕', name: '咖啡因依赖', desc: '单日咖啡超过 5 杯仍觉得困' },
+      { icon: '🌙', name: '凌晨战神', desc: '凌晨 2 点后仍在回复工作消息' },
+      { icon: '🐟', name: '摸鱼大师', desc: '摸鱼指数达到 95，且未被发现' },
+      { icon: '👊', name: '压力释放者', desc: '在系统里暴打老板获得胜利' },
+      { icon: '🚽', name: '卫生间隐士', desc: '带薪如厕坚持超过 3 分钟' },
+      { icon: '🎰', name: '福报赌徒', desc: '抽到 SSR 级空气饼' },
+    ];
+    const ENEMIES = {
+      boss: { name: '画饼老板', face: '👔', hp: 120, atk: [6, 14], skill: '画大饼冲击' },
+      coworker: { name: '甩锅同事', face: '🧑‍💼', hp: 100, atk: [5, 12], skill: '甩锅回旋' },
+      client: { name: '需求瞬变兽', face: '📣', hp: 140, atk: [8, 16], skill: '需求变更雨' },
+    };
+    const GACHA_POOL = [
+      { rarity: 'N', weight: 45, icon: '📄', name: '普通工牌', desc: '什么用都没有' },
+      { rarity: 'N', weight: 20, icon: '✏️', name: '快没水的笔', desc: '写到一半就没墨了' },
+      { rarity: 'R', weight: 18, icon: '🎫', name: '无效加班券', desc: '加班照常，慰问没有' },
+      { rarity: 'R', weight: 8, icon: '🃏', name: '好人卡', desc: '不可兑换，仅供精神胜利' },
+      { rarity: 'SR', weight: 6, icon: '🧋', name: '老板请的奶茶（画饼）', desc: '口头承诺，暂未到账' },
+      { rarity: 'SR', weight: 2, icon: '🛋️', name: '调休 0.5 天', desc: '需审批，审批人：老板' },
+      { rarity: 'SSR', weight: 1, icon: '🥧', name: 'SSR·空气大饼', desc: '传说级画饼，发光的那种' },
+    ];
+    const QUIZ = [
+      { q: '老板说「这很简单吧」，正确翻译是？', opts: ['真的很简单', '你加班吧', '给你涨工资', '你可以拒绝'], a: 1 },
+      { q: '群里 @所有人 但内容跟你无关，你应该？', opts: ['已读不回', '回「收到」', '回「？」', '退群'], a: 1 },
+      { q: '带薪如厕的最高境界是？', opts: ['真的上厕所', '刷短视频', '边开着电脑会议边躲', '直接回家'], a: 2 },
+      { q: 'deadline 前 10 分钟提交，体现了？', opts: ['拖延症晚期', '时间管理大师', '极限操作逼格', '以上都对'], a: 3 },
+      { q: '「下次一定」通常意味着？', opts: ['下次一定', '下次一定不会', '饼已画好', '已读乱回'], a: 2 },
+    ];
+    const CODE_LINES = [
+      'const kpi = overtime * coffee / sanity;',
+      'if (boss.nearby) switchToExcel();',
+      'await meeting.sleep(3600000);',
+      'throw new Error("需求又改了");',
+      'fish.click(); fish.click(); fish.click();',
+      'while(true) { reply("收到"); }',
+      '// TODO: 今天也要假装很忙',
+      'export default function NiuMa() { return <Work />; }',
+      'git commit -m "fix: 看起来改了很多"',
+      'console.log("我在认真工作（假装）");',
+    ];
+
+    let hostStats = {};
+    let coins = 50;
+    let fishScore = 0;
+    let inventory = [];
+    let fightWins = 0;
+    let bestCombo = 0;
+    let state = {
+      fight: null,
+      clicker: null,
+      toilet: null,
+      workKeys: 0,
+    };
+
+    const saveKey = 'niu-ma-save-v10';
+
+    function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function pickN(arr, n) { return [...arr].sort(() => Math.random() - 0.5).slice(0, n); }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    function loadSave() {
+      try {
+        const raw = localStorage.getItem(saveKey);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        coins = data.coins ?? 50;
+        fishScore = data.fishScore ?? 0;
+        inventory = data.inventory ?? [];
+        fightWins = data.fightWins ?? 0;
+        bestCombo = data.bestCombo ?? 0;
+        if (data.hostStats) hostStats = data.hostStats;
+      } catch {}
+    }
+    function save() {
+      localStorage.setItem(saveKey, JSON.stringify({
+        coins, fishScore, inventory, fightWins, bestCombo, hostStats,
+        name: document.getElementById('host-name')?.textContent,
+      }));
+    }
+
+    function addCoins(n) {
+      coins = Math.max(0, coins + n);
+      updateHud();
+      save();
+    }
+    function updateHud() {
+      document.getElementById('coin-display').textContent = coins;
+      document.getElementById('fish-display').textContent = fishScore;
+      document.getElementById('combo-best').textContent = bestCombo;
+      const today = new Date().toDateString();
+      const checked = localStorage.getItem('niu-ma-checkin') === today;
+      document.getElementById('checkin-display').textContent = checked ? '已打卡' : '未打卡';
+    }
+
+    // Boot
+    const bootLines = [
+      '> 正在扫描打工人 DNA...',
+      '> 检测到高浓度「社畜」因子 ✓',
+      '> 加载娱乐副本模块 v10.0...',
+      '> 解锁：暴打老板 / 极限摸鱼 / 福报抽奖...',
+      '> 禁用「拒绝加班」权限...',
+      '> 启用「自动回复收到」插件...',
+      '> 系统绑定完成！欢迎，天选牛马。',
+    ];
+
+    async function bootSequence() {
+      const log = document.getElementById('boot-log');
+      const bar = document.getElementById('boot-bar');
+      for (let i = 0; i < bootLines.length; i++) {
+        log.innerHTML += bootLines[i] + '<br>';
+        bar.style.width = ((i + 1) / bootLines.length * 100) + '%';
+        await sleep(280 + Math.random() * 200);
+      }
+      await sleep(400);
+      document.getElementById('boot-screen').style.opacity = '0';
+      document.getElementById('boot-screen').style.transition = 'opacity .6s';
+      await sleep(600);
+      document.getElementById('boot-screen').style.display = 'none';
+      document.getElementById('main-app').classList.add('show');
+      initApp();
+    }
+
+    function initApp() {
+      loadSave();
+      const params = new URLSearchParams(location.search);
+      const nameFromUrl = params.get('name');
+      if (nameFromUrl) document.getElementById('name-input').value = decodeURIComponent(nameFromUrl);
+      bindHost(false);
+      renderTasks();
+      renderLogs();
+      renderInventory();
+      updateHud();
+      document.getElementById('share-link').textContent = location.href.split('?')[0];
+      document.getElementById('click-best').textContent = localStorage.getItem('niu-ma-click-best') || '0';
+
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+          tab.classList.add('active');
+          document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+          if (tab.dataset.tab === 'bag') renderInventory();
+        });
+      });
+
+      setInterval(() => { if (Math.random() < 0.25) showToast(pick(TOASTS)); }, 12000);
+      setTimeout(() => showAchievement(pick(ACHIEVEMENTS)), 2500);
+    }
+
+    function bindHost(showMsg = true) {
+      const input = document.getElementById('name-input').value.trim();
+      const name = input || pick(['神秘打工人', '天选牛马', '福报继承人', '加班侠', '收到bot']);
+      document.getElementById('host-name').textContent = name;
+      document.getElementById('avatar').textContent = pick(AVATARS);
+      document.getElementById('host-rank').textContent = pick(RANKS);
+      document.getElementById('host-id').textContent = `UID: NM-${Date.now().toString().slice(-8)}-${rand(100,999)}`;
+      if (!hostStats.overtime) {
+        hostStats = {
+          overtime: rand(60, 99), slack: rand(40, 95), boss: rand(10, 60),
+          hair: rand(5, 40), sanity: rand(15, 55), coffee: rand(50, 99),
+        };
+      }
+      renderStats();
+      if (showMsg) {
+        toast('系统提示', `宿主「${name}」绑定成功！`, '');
+        addLog(`<span class="highlight">[绑定]</span> 宿主 ${name} 已重新绑定`);
+      }
+      save();
+    }
+
+    function renderStats() {
+      const list = document.getElementById('stat-list');
+      list.innerHTML = STATS.map(s => `
+        <div class="stat-row">
+          <span class="stat-label">${s.label}</span>
+          <div class="stat-bar-bg"><div class="stat-bar ${s.color}" style="width:0%" data-val="${hostStats[s.key]}"></div></div>
+          <span class="stat-val">${hostStats[s.key]}</span>
+        </div>`).join('');
+      requestAnimationFrame(() => {
+        list.querySelectorAll('.stat-bar').forEach(bar => { bar.style.width = bar.dataset.val + '%'; });
+      });
+    }
+
+    function renderTasks() {
+      document.getElementById('task-list').innerHTML = pickN(TASKS, 3).map(t => `
+        <div class="task-card">
+          <div class="task-type ${t.type}">${t.typeLabel}</div>
+          <div class="task-desc">${t.desc}</div>
+          <div class="task-reward">${t.reward}</div>
+        </div>`).join('');
+    }
+
+    function renderLogs() {
+      const init = [
+        '<span class="highlight">[系统]</span> 宿主绑定成功，娱乐副本已解锁',
+        '<span class="warn">[警告]</span> 检测到试图拒绝加班，已自动驳回',
+        '<span class="gold">[奖励]</span> 完成「假装在忙」，摸鱼分 +3',
+        '<span class="highlight">[系统]</span> 老板好感：薛定谔的满意',
+      ];
+      document.getElementById('sys-log').innerHTML = init.join('<br>');
+    }
+
+    function addLog(html) {
+      const log = document.getElementById('sys-log');
+      log.innerHTML = html + '<br>' + log.innerHTML;
+    }
+
+    function renderInventory() {
+      const grid = document.getElementById('inv-grid');
+      if (!inventory.length) {
+        grid.innerHTML = '<div class="inv-empty">仓库空空如也，去抽奖 / 打怪吧</div>';
+        return;
+      }
+      const map = {};
+      inventory.forEach(it => {
+        const k = it.name;
+        if (!map[k]) map[k] = { ...it, count: 0 };
+        map[k].count++;
+      });
+      grid.innerHTML = Object.values(map).map(it => `
+        <div class="inv-item">
+          <span class="ico">${it.icon}</span>
+          <div class="rarity-${it.rarity}">${it.rarity}</div>
+          <div>${it.name}</div>
+          <div style="color:var(--muted)">x${it.count}</div>
+        </div>`).join('');
+    }
+
+    function refreshTasks() {
+      renderTasks();
+      toast('系统提示', '任务已刷新！换汤不换药', '');
+      addLog('<span class="highlight">[任务]</span> 宿主刷新任务，系统：内容没变');
+    }
+
+    function claimReward() {
+      const rewards = [
+        '获得「精神鼓励」×1',
+        '获得「下次一定」承诺 ×1',
+        '获得「好好干不会亏待你」语录 ×1',
+        '获得空气 ×1（老板画的饼）',
+        '获得调休 0.5 天（需审批）',
+      ];
+      toast('🎁 福报降临', pick(rewards), 'reward');
+      hostStats.sanity = Math.min(100, hostStats.sanity + rand(1, 5));
+      addCoins(rand(8, 20));
+      renderStats();
+      addLog('<span class="gold">[福报]</span> 宿主领取今日福报');
+      showAchievement(pick(ACHIEVEMENTS));
+    }
+
+    function completeFakeTask() {
+      addCoins(12);
+      fishScore += 20;
+      hostStats.slack = Math.min(100, hostStats.slack + 5);
+      renderStats();
+      updateHud();
+      toast('✅ 任务完成（自称）', '系统懒得核实，先给你 12 福报币', 'reward');
+      addLog('<span class="gold">[任务]</span> 宿主假装完成任务，系统睁一只眼闭一只眼');
+      save();
+    }
+
+    function dailyCheckin() {
+      const today = new Date().toDateString();
+      if (localStorage.getItem('niu-ma-checkin') === today) {
+        toast('⚠️ 打卡失败', '今天已经打过卡了，明天再来卷', 'warning');
+        return;
+      }
+      localStorage.setItem('niu-ma-checkin', today);
+      addCoins(30);
+      hostStats.sanity = Math.min(100, hostStats.sanity + 8);
+      renderStats();
+      updateHud();
+      toast('📅 打卡成功', '获得 30 福报币，打工人精神 +8', 'reward');
+      addLog('<span class="gold">[打卡]</span> 每日打卡成功 +30 福报币');
+      showAchievement({ icon: '📅', name: '打卡牛马', desc: '完成一次系统每日打卡' });
+    }
+
+    function showRandomEvent() {
+      const ev = pick(EVENTS);
+      ev.effect();
+      renderStats();
+      toast(ev.title, ev.body, 'warning');
+      addLog(`<span class="warn">[事件]</span> ${ev.title}：${ev.body}`);
+      save();
+    }
+
+    function tryQuit() {
+      const reasons = [
+        '离职申请已提交，审批人：你的房贷',
+        '离职被驳回：本周福报尚未完成',
+        '检测到冲动离职，冷却 24 小时',
+        '老板释放「再加把劲」，离职失败',
+        '发量不支持裸辞，申请已撤回',
+      ];
+      toast('⚠️ 离职失败', pick(reasons), 'warning');
+      hostStats.sanity = Math.max(0, hostStats.sanity - rand(5, 15));
+      renderStats();
+      addLog('<span class="warn">[离职]</span> 宿主尝试离职，系统已驳回');
+      save();
+    }
+
+    // ===== Fight =====
+    function openFight(type = 'boss') {
+      resetFight(type);
+      openModal('fight-modal');
+    }
+
+    function resetFight(type) {
+      const t = type || state.fight?.type || 'boss';
+      const enemy = ENEMIES[t];
+      state.fight = {
+        type: t,
+        pHp: 100, pMax: 100,
+        eHp: enemy.hp, eMax: enemy.hp,
+        combo: 0, totalDmg: 0, over: false,
+        enemy,
+      };
+      document.getElementById('fight-title').textContent = `👊 暴打${enemy.name}`;
+      document.getElementById('e-name').textContent = enemy.name;
+      document.getElementById('enemyF').querySelector('.face').textContent = enemy.face;
+      document.getElementById('enemyF').querySelector('.name-tag').textContent = enemy.name;
+      document.getElementById('playerF').querySelector('.face').textContent = document.getElementById('avatar').textContent;
+      document.getElementById('playerF').className = 'fighter';
+      document.getElementById('enemyF').className = 'fighter';
+      document.getElementById('fight-msg').classList.remove('show');
+      updateFightUI();
+    }
+
+    function updateFightUI() {
+      const f = state.fight;
+      if (!f) return;
+      document.getElementById('p-hp').style.width = (f.pHp / f.pMax * 100) + '%';
+      document.getElementById('e-hp').style.width = (f.eHp / f.eMax * 100) + '%';
+      document.getElementById('p-hp-txt').textContent = Math.max(0, Math.ceil(f.pHp));
+      document.getElementById('e-hp-txt').textContent = Math.max(0, Math.ceil(f.eHp));
+      document.getElementById('fight-combo').textContent = f.combo;
+      document.getElementById('fight-dmg').textContent = f.totalDmg;
+      document.getElementById('fight-wins').textContent = fightWins;
+      const ct = document.getElementById('combo-text');
+      if (f.combo >= 2) {
+        ct.textContent = `COMBO x${f.combo}`;
+        ct.classList.add('show');
+      } else ct.classList.remove('show');
+    }
+
+    function spawnDmg(n, x) {
+      const arena = document.getElementById('fight-arena');
+      const el = document.createElement('div');
+      el.className = 'dmg-float';
+      el.textContent = '-' + n;
+      el.style.left = (x || 60) + '%';
+      el.style.top = '40%';
+      arena.appendChild(el);
+      setTimeout(() => el.remove(), 800);
+    }
+
+    function playerAttack() {
+      const f = state.fight;
+      if (!f || f.over) return;
+      f.combo++;
+      if (f.combo > bestCombo) { bestCombo = f.combo; updateHud(); }
+      const base = rand(8, 16);
+      const dmg = Math.floor(base * (1 + f.combo * 0.12));
+      f.eHp = Math.max(0, f.eHp - dmg);
+      f.totalDmg += dmg;
+      const pf = document.getElementById('playerF');
+      const ef = document.getElementById('enemyF');
+      pf.classList.add('punch');
+      ef.classList.add('hit');
+      spawnDmg(dmg, 65);
+      setTimeout(() => { pf.classList.remove('punch'); ef.classList.remove('hit'); }, 120);
+      updateFightUI();
+      if (f.eHp <= 0) return endFight(true);
+      setTimeout(enemyAttack, 280);
+    }
+
+    function playerSkill() {
+      const f = state.fight;
+      if (!f || f.over) return;
+      if (coins < 5) { toast('⚠️ 技能失败', '需要 5 福报币释放技能', 'warning'); return; }
+      addCoins(-5);
+      f.combo += 2;
+      const dmg = rand(25, 40) + f.combo * 2;
+      f.eHp = Math.max(0, f.eHp - dmg);
+      f.totalDmg += dmg;
+      spawnDmg(dmg, 62);
+      showFightMsg('甩锅回旋踢！');
+      updateFightUI();
+      if (f.eHp <= 0) return endFight(true);
+      setTimeout(enemyAttack, 350);
+    }
+
+    function enemyAttack() {
+      const f = state.fight;
+      if (!f || f.over) return;
+      if (Math.random() < 0.25) f.combo = 0;
+      const [a, b] = f.enemy.atk;
+      const dmg = rand(a, b);
+      f.pHp = Math.max(0, f.pHp - dmg);
+      document.getElementById('playerF').classList.add('hit');
+      spawnDmg(dmg, 30);
+      setTimeout(() => document.getElementById('playerF').classList.remove('hit'), 120);
+      updateFightUI();
+      if (f.pHp <= 0) endFight(false);
+    }
+
+    function showFightMsg(text) {
+      const el = document.getElementById('fight-msg');
+      el.textContent = text;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 700);
+    }
+
+    function endFight(win) {
+      const f = state.fight;
+      f.over = true;
+      if (win) {
+        document.getElementById('enemyF').classList.add('ko');
+        showFightMsg('KO！');
+        fightWins++;
+        const reward = rand(25, 50) + Math.floor(f.combo * 2);
+        addCoins(reward);
+        hostStats.sanity = Math.min(100, hostStats.sanity + 10);
+        hostStats.overtime = Math.max(0, hostStats.overtime - 8);
+        renderStats();
+        toast('🏆 胜利', `暴打成功！获得 ${reward} 福报币`, 'reward');
+        addLog(`<span class="gold">[格斗]</span> 击败 ${f.enemy.name}，+${reward} 福报币`);
+        showAchievement(ACHIEVEMENTS.find(a => a.name === '压力释放者') || pick(ACHIEVEMENTS));
+      } else {
+        document.getElementById('playerF').classList.add('ko');
+        showFightMsg('你被画饼了…');
+        hostStats.sanity = Math.max(0, hostStats.sanity - 8);
+        renderStats();
+        toast('💀 战败', '被老板/同事/甲方反杀，sanity -8', 'warning');
+        addLog(`<span class="warn">[格斗]</span> 被 ${f.enemy.name} 击败`);
+      }
+      updateFightUI();
+      save();
+    }
+
+    // ===== Clicker =====
+    function openClicker() {
+      openModal('clicker-modal');
+      document.getElementById('click-best').textContent = localStorage.getItem('niu-ma-click-best') || '0';
+    }
+    function closeClicker() {
+      if (state.clicker?.timer) clearInterval(state.clicker.timer);
+      state.clicker = null;
+      closeModal('clicker-modal');
+    }
+    function startClicker() {
+      if (state.clicker?.timer) clearInterval(state.clicker.timer);
+      state.clicker = { score: 0, left: 30, active: true };
+      document.getElementById('click-score').textContent = '0';
+      document.getElementById('click-time').textContent = '30';
+      state.clicker.timer = setInterval(() => {
+        state.clicker.left--;
+        document.getElementById('click-time').textContent = state.clicker.left;
+        if (state.clicker.left <= 0) endClicker();
+      }, 1000);
+      toast('🐟 摸鱼开始', '30 秒内狂点！', '');
+    }
+    function doClick(e) {
+      if (!state.clicker?.active) return;
+      state.clicker.score++;
+      document.getElementById('click-score').textContent = state.clicker.score;
+      const area = document.getElementById('clicker-area');
+      const flo = document.createElement('div');
+      flo.className = 'click-float';
+      flo.textContent = '+1';
+      flo.style.left = (e.offsetX || rand(40, 200)) + 'px';
+      flo.style.top = (e.offsetY || rand(40, 120)) + 'px';
+      area.appendChild(flo);
+      setTimeout(() => flo.remove(), 700);
+    }
+    function endClicker() {
+      if (!state.clicker) return;
+      clearInterval(state.clicker.timer);
+      state.clicker.active = false;
+      const score = state.clicker.score;
+      fishScore += score;
+      const reward = Math.floor(score / 3);
+      addCoins(reward);
+      hostStats.slack = Math.min(100, hostStats.slack + Math.min(20, Math.floor(score / 10)));
+      renderStats();
+      updateHud();
+      const best = +(localStorage.getItem('niu-ma-click-best') || 0);
+      if (score > best) localStorage.setItem('niu-ma-click-best', score);
+      document.getElementById('click-best').textContent = localStorage.getItem('niu-ma-click-best');
+      toast('🐟 摸鱼结算', `点击 ${score} 次，获得 ${reward} 福报币`, 'reward');
+      addLog(`<span class="gold">[摸鱼]</span> 完成挑战，点击 ${score}，+${reward} 币`);
+      if (score >= 80) showAchievement(ACHIEVEMENTS.find(a => a.name === '摸鱼大师') || pick(ACHIEVEMENTS));
+      save();
+    }
+
+    // ===== Gacha =====
+    function openGacha() { openModal('gacha-modal'); }
+    function weightedPick() {
+      const total = GACHA_POOL.reduce((s, i) => s + i.weight, 0);
+      let r = Math.random() * total;
+      for (const item of GACHA_POOL) {
+        r -= item.weight;
+        if (r <= 0) return item;
+      }
+      return GACHA_POOL[0];
+    }
+    function doGacha(times) {
+      const cost = times === 10 ? 88 : 10;
+      if (coins < cost) { toast('⚠️ 余额不足', '福报币不够，去打怪或摸鱼赚一点', 'warning'); return; }
+      addCoins(-cost);
+      const results = [];
+      for (let i = 0; i < times; i++) {
+        const item = weightedPick();
+        results.push(item);
+        inventory.push({ ...item });
+      }
+      const best = results.sort((a, b) => ['N','R','SR','SSR'].indexOf(b.rarity) - ['N','R','SR','SSR'].indexOf(a.rarity))[0];
+      const box = document.getElementById('gacha-result');
+      if (times === 1) {
+        box.innerHTML = `<div class="big">${best.icon}</div><div class="rarity-${best.rarity}">[${best.rarity}] ${best.name}</div><div class="hint">${best.desc}</div>`;
+      } else {
+        box.innerHTML = `<div class="big">${best.icon}</div><div class="rarity-${best.rarity}">十连最高：[${best.rarity}] ${best.name}</div>
+          <div style="margin-top:8px;font-size:12px;line-height:1.6">${results.map(r => `<span class="rarity-${r.rarity}">${r.icon}</span>`).join(' ')}</div>`;
+      }
+      renderInventory();
+      toast('🎰 抽奖结果', `[${best.rarity}] ${best.name}`, 'reward');
+      addLog(`<span class="gold">[抽奖]</span> ${times} 抽，出货 [${best.rarity}] ${best.name}`);
+      if (best.rarity === 'SSR') showAchievement(ACHIEVEMENTS.find(a => a.name === '福报赌徒') || pick(ACHIEVEMENTS));
+      save();
+    }
+
+    // ===== Toilet =====
+    function openToilet() { openModal('toilet-modal'); }
+    function startToilet() {
+      if (state.toilet?.timer) clearInterval(state.toilet.timer);
+      state.toilet = { sec: 0, alive: true };
+      document.getElementById('toilet-status').textContent = '潜入成功…正在带薪如厕中';
+      state.toilet.timer = setInterval(() => {
+        if (!state.toilet?.alive) return;
+        state.toilet.sec++;
+        const m = String(Math.floor(state.toilet.sec / 60)).padStart(2, '0');
+        const s = String(state.toilet.sec % 60).padStart(2, '0');
+        document.getElementById('toilet-timer').textContent = `${m}:${s}`;
+        // random bust chance increases over time
+        const chance = Math.min(0.35, 0.02 + state.toilet.sec * 0.004);
+        if (Math.random() < chance) bustToilet();
+      }, 1000);
+    }
+    function bustToilet() {
+      const sec = state.toilet?.sec || 0;
+      stopToilet(true);
+      hostStats.boss = Math.max(0, hostStats.boss - 10);
+      hostStats.sanity = Math.max(0, hostStats.sanity - 5);
+      renderStats();
+      toast('🚨 抓包！', `在厕所待了 ${sec} 秒被老板发现！`, 'warning');
+      addLog(`<span class="warn">[如厕]</span> 被抓包，坚持 ${sec} 秒`);
+      document.getElementById('toilet-status').textContent = '失败：你在厕所刷短视频的样子被看见了';
+      save();
+    }
+    function stopToilet(silent) {
+      if (!state.toilet) { closeModal('toilet-modal'); return; }
+      const sec = state.toilet.sec;
+      const wasAlive = state.toilet.alive;
+      clearInterval(state.toilet.timer);
+      state.toilet.alive = false;
+      if (!silent && wasAlive && sec > 0) {
+        const reward = Math.min(60, Math.floor(sec * 1.5));
+        addCoins(reward);
+        hostStats.slack = Math.min(100, hostStats.slack + Math.min(15, Math.floor(sec / 10)));
+        renderStats();
+        toast('🚽 安全撤回', `坚持 ${sec} 秒，获得 ${reward} 福报币`, 'reward');
+        addLog(`<span class="gold">[如厕]</span> 安全撤回，${sec}s，+${reward} 币`);
+        if (sec >= 180) showAchievement(ACHIEVEMENTS.find(a => a.name === '卫生间隐士') || pick(ACHIEVEMENTS));
+        save();
+      }
+      if (silent) closeModal('toilet-modal');
+      state.toilet = null;
+    }
+
+    // ===== Quiz =====
+    let quizIdx = 0;
+    function openQuiz() {
+      quizIdx = rand(0, QUIZ.length - 1);
+      renderQuiz();
+      openModal('quiz-modal');
+    }
+    function renderQuiz() {
+      const item = QUIZ[quizIdx % QUIZ.length];
+      document.getElementById('quiz-q').textContent = item.q;
+      document.getElementById('quiz-feedback').textContent = '';
+      document.getElementById('quiz-opts').innerHTML = item.opts.map((o, i) =>
+        `<button class="quiz-opt" onclick="answerQuiz(${i})">${String.fromCharCode(65 + i)}. ${o}</button>`
+      ).join('');
+    }
+    function answerQuiz(i) {
+      const item = QUIZ[quizIdx % QUIZ.length];
+      const opts = document.querySelectorAll('#quiz-opts .quiz-opt');
+      opts.forEach((el, idx) => {
+        el.disabled = true;
+        if (idx === item.a) el.classList.add('correct');
+        if (idx === i && i !== item.a) el.classList.add('wrong');
+      });
+      if (i === item.a) {
+        document.getElementById('quiz-feedback').textContent = '回答正确！sanity +5，福报币 +8';
+        hostStats.sanity = Math.min(100, hostStats.sanity + 5);
+        addCoins(8);
+        renderStats();
+        addLog('<span class="gold">[考试]</span> 答对社畜题');
+      } else {
+        document.getElementById('quiz-feedback').textContent = '不对哦，你还不够社畜。加班值 +5';
+        hostStats.overtime = Math.min(100, hostStats.overtime + 5);
+        renderStats();
+      }
+      save();
+    }
+    function nextQuiz() {
+      quizIdx = (quizIdx + 1) % QUIZ.length;
+      renderQuiz();
+    }
+
+    // ===== Work sim =====
+    function openWorkSim() {
+      state.workKeys = 0;
+      document.getElementById('work-keys').textContent = '0';
+      document.getElementById('work-busy').textContent = '0%';
+      document.getElementById('work-screen').textContent = '> waiting for keystrokes...\n';
+      openModal('work-modal');
+      const input = document.getElementById('work-input');
+      input.value = '';
+      input.oninput = () => {
+        state.workKeys++;
+        document.getElementById('work-keys').textContent = state.workKeys;
+        const busy = Math.min(100, Math.floor(state.workKeys / 2));
+        document.getElementById('work-busy').textContent = busy + '%';
+        const screen = document.getElementById('work-screen');
+        screen.textContent += pick(CODE_LINES) + '\n';
+        screen.scrollTop = screen.scrollHeight;
+        if (state.workKeys % 15 === 0) input.value = '';
+      };
+      setTimeout(() => input.focus(), 200);
+    }
+    function closeWorkSim() {
+      document.getElementById('work-input').oninput = null;
+      closeModal('work-modal');
+    }
+    function claimBusyReward() {
+      const reward = Math.floor(state.workKeys / 5);
+      if (reward <= 0) { toast('⚠️', '你还不够忙，再打会儿字', 'warning'); return; }
+      addCoins(Math.min(40, reward));
+      hostStats.boss = Math.min(100, hostStats.boss + Math.min(10, Math.floor(state.workKeys / 20)));
+      renderStats();
+      toast('⌨️ 伪装成功', `忙碌伪装生效，获得福报币`, 'reward');
+      addLog(`<span class="gold">[假装忙]</span> 按键 ${state.workKeys}，领取奖励`);
+      save();
+    }
+
+    // ===== UI helpers =====
+    function openModal(id) { document.getElementById(id).classList.add('show'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    function toast(title, body, type = '') { showToast({ title, body, type }); }
+    function showToast({ title, body, type = '' }) {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.innerHTML = `<div class="toast-title">${title}</div><div class="toast-body">${body}</div>`;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }
+
+    function showAchievement(ach) {
+      document.getElementById('ach-icon').textContent = ach.icon;
+      document.getElementById('ach-name').textContent = ach.name;
+      document.getElementById('ach-desc').textContent = ach.desc;
+      document.getElementById('achievement-modal').classList.add('show');
+    }
+    function closeAchievement(e) {
+      if (e && e.target !== document.getElementById('achievement-modal') && e.type === 'click') {
+        // button path
+      }
+      document.getElementById('achievement-modal').classList.remove('show');
+    }
+
+    function copyLink() {
+      const name = document.getElementById('host-name').textContent;
+      const base = location.href.split('?')[0];
+      const link = name && name !== '神秘打工人' ? `${base}?name=${encodeURIComponent(name)}` : base;
+      navigator.clipboard?.writeText(link).then(() => {
+        toast('📋 已复制', '链接已复制，发给同事一起绑定！', 'reward');
+      }).catch(() => prompt('复制这个链接：', link));
+    }
+
+    // expose for inline handlers
+    window.bindHost = bindHost;
+    window.refreshTasks = refreshTasks;
+    window.claimReward = claimReward;
+    window.completeFakeTask = completeFakeTask;
+    window.dailyCheckin = dailyCheckin;
+    window.showRandomEvent = showRandomEvent;
+    window.tryQuit = tryQuit;
+    window.openFight = openFight;
+    window.resetFight = resetFight;
+    window.playerAttack = playerAttack;
+    window.playerSkill = playerSkill;
+    window.openClicker = openClicker;
+    window.closeClicker = closeClicker;
+    window.startClicker = startClicker;
+    window.doClick = doClick;
+    window.openGacha = openGacha;
+    window.doGacha = doGacha;
+    window.openToilet = openToilet;
+    window.startToilet = startToilet;
+    window.stopToilet = stopToilet;
+    window.openQuiz = openQuiz;
+    window.answerQuiz = answerQuiz;
+    window.nextQuiz = nextQuiz;
+    window.openWorkSim = openWorkSim;
+    window.closeWorkSim = closeWorkSim;
+    window.claimBusyReward = claimBusyReward;
+    window.closeModal = closeModal;
+    window.closeAchievement = closeAchievement;
+    window.copyLink = copyLink;
+
+    bootSequence();
+  </script>
+</body>
+</html>
